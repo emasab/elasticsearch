@@ -430,4 +430,17 @@ public class QueryFolderTests extends ESTestCase {
         assertThat(a, containsString("\"terms\":{\"field\":\"keyword\""));
         assertThat(a, containsString("{\"avg\":{\"field\":\"int\"}"));
     }
+
+    public void testFoldingOfLiteralWithGroupBy() {
+        PhysicalPlan p = plan("SELECT 1, max(date) FROM test group by keyword");
+        assertEquals(EsQueryExec.class, p.getClass());
+        EsQueryExec ee = (EsQueryExec) p;
+        assertEquals(2, ee.output().size());
+        assertEquals(ReferenceAttribute.class, ee.output().get(0).getClass());
+        assertEquals(ReferenceAttribute.class, ee.output().get(1).getClass());
+        ReferenceAttribute ra1 = (ReferenceAttribute) ee.output().get(0);
+        ReferenceAttribute ra2 = (ReferenceAttribute) ee.output().get(1);
+        assertThat(ra1.toString(), startsWith("1{"));
+        assertThat(ra2.toString(), startsWith("max(date){"));
+    }
 }
